@@ -1,0 +1,7 @@
+.vs/
+*.vsidx
+node_modules/
+build/
+dist/
+.DS_Store
+Thumbs.db
