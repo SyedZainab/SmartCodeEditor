@@ -1,14 +1,41 @@
-  - name: Build with dotnet
+name: Build and Deploy .NET App to Azure
+
+on:
+  push:
+    branches:
+      - main  # or your deployment branch
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x' # change based on your project version
+
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: backend/CodeEditorBackend
+
+      - name: Build with dotnet
         run: dotnet build --configuration Release
         working-directory: backend/CodeEditorBackend
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+      - name: Publish with dotnet
+        run: dotnet publish -c Release -o publish
         working-directory: backend/CodeEditorBackend
 
-      - name: Upload artifact for deployment job
+      - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
-@@ -38,25 +40,25 @@ jobs:
+        with:
+          name: dotnet-app
+          path: backend/CodeEditorBackend/publish
+
   deploy:
     runs-on: windows-latest
     needs: build
@@ -16,15 +43,16 @@
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: .net-app
-      
+          name: dotnet-app
+          path: ./app
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -34,8 +62,8 @@
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
-@@ -65,4 +67,3 @@ jobs:
+        uses: azure/webapps-deploy@v2
+        with:
           app-name: 'zainab-codeeditor'
           slot-name: 'Production'
-          package: .
-
+          package: ./app
